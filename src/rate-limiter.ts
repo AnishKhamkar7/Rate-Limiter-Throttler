@@ -1,13 +1,18 @@
 import { Request, Response, NextFunction } from "express"
 
+interface RateLimitRequest {
+  requestLimit: number
+  timeFrameInSeconds: number
+}
+
 export default class RateLimiter {
   private requestLimit
-  private timeFrame
+  private timeFrameInSeconds
   private requestMap = new Map<string, { counter: number; startTime: number }>()
 
-  constructor(requestLimit: number, timeFrame: number) {
+  constructor({ requestLimit, timeFrameInSeconds }: RateLimitRequest) {
     this.requestLimit = requestLimit
-    this.timeFrame = timeFrame
+    this.timeFrameInSeconds = timeFrameInSeconds * 1000
   }
 
   dict_rate_limiter = async (
@@ -22,12 +27,12 @@ export default class RateLimiter {
     if (this.requestMap.has(userId)) {
       const userData = this.requestMap.get(userId)!
 
-      if (currentTime - userData.startTime > this.timeFrame) {
+      if (currentTime - userData.startTime > this.timeFrameInSeconds) {
         this.requestMap.set(userId, { counter: 1, startTime: currentTime })
         next()
       } else {
         if (userData.counter >= this.requestLimit) {
-          return res.status(429).json({
+          res.status(429).json({
             message: "Too many request. Please try again",
           })
         }
