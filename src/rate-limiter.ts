@@ -6,8 +6,8 @@ interface RateLimitRequest {
 }
 
 export default class RateLimiter {
-  private requestLimit
-  private timeFrameInSeconds
+  private requestLimit: number
+  private timeFrameInSeconds: number
   private requestMap = new Map<string, { counter: number; startTime: number }>()
 
   constructor({ requestLimit, timeFrameInSeconds }: RateLimitRequest) {
@@ -15,12 +15,12 @@ export default class RateLimiter {
     this.timeFrameInSeconds = timeFrameInSeconds * 1000
   }
 
-  dict_rate_limiter = async (
+  dict_rate_limiter = (
     req: Request,
     res: Response,
     next: NextFunction
-  ) => {
-    const userId = req.ip!
+  ): void => {
+    const userId = req.ip || "unknown" // Ensure `req.ip` is defined
 
     const currentTime = Date.now()
 
@@ -28,24 +28,23 @@ export default class RateLimiter {
       const userData = this.requestMap.get(userId)!
 
       if (currentTime - userData.startTime > this.timeFrameInSeconds) {
+        // Reset counter if the time frame has passed
         this.requestMap.set(userId, { counter: 1, startTime: currentTime })
-        next()
-      } else {
-        if (userData.counter >= this.requestLimit) {
-          res.status(429).json({
-            message: "Too many request. Please try again",
-          })
-        }
-
-        userData.counter++
-        this.requestMap.set(userId, userData)
-
-        next()
+        return next()
       }
+
+      if (userData.counter >= this.requestLimit) {
+        res.status(429).json({
+          message: "Too many requests. Please try again later.",
+        })
+      }
+
+      userData.counter++
+      this.requestMap.set(userId, userData)
     } else {
       this.requestMap.set(userId, { counter: 1, startTime: currentTime })
-
-      next()
     }
+
+    next()
   }
 }
