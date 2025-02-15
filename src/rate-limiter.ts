@@ -20,7 +20,7 @@ export default class RateLimiter {
     res: Response,
     next: NextFunction
   ): void => {
-    const userId = req.ip || "unknown" // Ensure `req.ip` is defined
+    const userId = req.ip || "unknown"
 
     const currentTime = Date.now()
 
@@ -28,7 +28,6 @@ export default class RateLimiter {
       const userData = this.requestMap.get(userId)!
 
       if (currentTime - userData.startTime > this.timeFrameInSeconds) {
-        // Reset counter if the time frame has passed
         this.requestMap.set(userId, { counter: 1, startTime: currentTime })
         return next()
       }
