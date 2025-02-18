@@ -8,7 +8,9 @@ const router = express.Router()
 const apiManager = new ApiManager()
 const rateLimiter = new RateLimiter({
   requestLimit: 2,
-  timeFrameInSeconds: 5,
+  timeFramePerUser: 5,
+  throttleLimit: 10,
+  timeFrameThrottle: 1,
 })
 
 app.use("/", router)
